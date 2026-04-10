@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Smart Traffic Dashboard</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      background: #111;
+      color: #fff;
+    }
+
+    .card {
+      margin: 20px auto;
+      padding: 20px;
+      width: 400px;
+      border-radius: 12px;
+      background: #222;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    .emergency {
+      background: red;
+      color: white;
+      font-size: 22px;
+      padding: 15px;
+      border-radius: 10px;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0.6; }
+    }
+
+    .green {
+      color: #00ff88;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .normal {
+      color: #00bfff;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🚦 Smart Traffic Control</h1>
+
+<div class="card" id="dashboard">
+  Loading data...
+</div>
+
+<script>
+const API_URL = "https://opensheet.elk.sh/11zXU5AM4QOccg0NXorl2_jVXBWt8xEywb8Vlz7IXKuc/tab";
+
+async function loadData() {
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+
+    const lastRow = data[data.length - 1];
+
+    const signal = lastRow.signal_id;
+    const status = lastRow.status;
+    const traffic = lastRow.traffic_level;
+    const greenTime = lastRow.green_time;
+
+    let html = "";
+
+    if (status === "EMERGENCY") {
+      html = `
+        <div class="emergency">🚨 EMERGENCY ALERT</div>
+        <h2>Signal: ${signal}</h2>
+        <p>Priority clearance activated</p>
+        <p class="green">🟢 GREEN LIGHT: ${signal}</p>
+        <p>Green Time: ${greenTime}s</p>
+      `;
+    } else {
+      html = `
+        <h2 class="normal">Normal Traffic</h2>
+        <p>Signal: ${signal}</p>
+        <p>Traffic Level: ${traffic}</p>
+        <p class="green">Next Green: ${signal}</p>
+        <p>Duration: ${greenTime}s</p>
+      `;
+    }
+
+    document.getElementById("dashboard").innerHTML = html;
+
+  } catch (err) {
+    document.getElementById("dashboard").innerHTML = "Error loading data";
+    console.error(err);
+  }
+}
+
+// refresh every 3 seconds
+setInterval(loadData, 3000);
+
+// initial load
+loadData();
+</script>
+
+</body>
+</html>
