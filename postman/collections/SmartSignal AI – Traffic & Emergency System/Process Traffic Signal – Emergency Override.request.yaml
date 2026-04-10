@@ -1,0 +1,38 @@
+$kind: http-request
+name: 'Process Traffic Signal – Emergency Override'
+method: POST
+url: '{{baseUrl}}/{{webhookPath}}/traffic-signal'
+order: 2000
+description: |-
+  Same endpoint as "Process Traffic Signal" but with `emergency: true`.
+  The workflow bypasses traffic-level logic and forces green_time = 120 s
+  with status = EMERGENCY. Use this request to test the emergency path.
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "signal_id": "SIG-EMG-001",
+      "traffic_level": "LOW",
+      "nearby": "LOW",
+      "emergency": true
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test("Emergency: status is EMERGENCY", function () {
+          const json = pm.response.json();
+          pm.expect(json.status).to.eql("EMERGENCY");
+      });
+
+      pm.test("Emergency: green_time is 120", function () {
+          const json = pm.response.json();
+          pm.expect(json.green_time).to.eql(120);
+      });

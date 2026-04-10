@@ -1,0 +1,202 @@
+{
+  "name": "SmartSignal AI – Traffic & Emergency System",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "traffic-signal",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "e8a9f0b1-1234-4567-89ab-cdef01234567",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.body.emergency }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "f9b0a1c2-2345-5678-90bc-defa12345678",
+      "name": "Is Emergency?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "number": [
+            {
+              "name": "green_time",
+              "value": 120
+            }
+          ],
+          "string": [
+            {
+              "name": "status",
+              "value": "EMERGENCY"
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-3456-6789-01cd-efab23456789",
+      "name": "Emergency Set",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        850,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "let green_time = 0;\nconst traffic = items[0].json.body.traffic_level;\nconst nearby = items[0].json.body.nearby;\n\n// Base Logic\nif (traffic === 'HIGH') green_time = 70;\nelse if (traffic === 'MEDIUM') green_time = 40;\nelse green_time = 20;\n\n// Nearby Adjustment\nif (nearby === 'HIGH') green_time -= 15;\nelse if (nearby === 'LOW') green_time += 5;\n\nreturn [{\n  json: {\n    green_time: green_time,\n    status: \"NORMAL\"\n  }\n}];"
+      },
+      "id": "b2c3d4e5-4567-7890-12de-fbc03456789a",
+      "name": "Traffic Logic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        850,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "signal_id",
+              "value": "={{ $node[\"Webhook\"].json.body.signal_id }}"
+            },
+            {
+              "name": "traffic_level",
+              "value": "={{ $node[\"Webhook\"].json.body.traffic_level }}"
+            },
+            {
+              "name": "status",
+              "value": "={{ $json.status }}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{ $now }}"
+            }
+          ],
+          "number": [
+            {
+              "name": "green_time",
+              "value": "={{ $json.green_time }}"
+            }
+          ]
+        }
+      },
+      "id": "c3d4e5f6-5678-8901-23ef-0cd1456789ab",
+      "name": "Final Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "d4e5f6a7-6789-9012-34f0-1de256789abc",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1350,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Is Emergency?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Emergency?": {
+      "main": [
+        [
+          {
+            "node": "Emergency Set",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Traffic Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emergency Set": {
+      "main": [
+        [
+          {
+            "node": "Final Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Traffic Logic": {
+      "main": [
+        [
+          {
+            "node": "Final Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Data": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "smart-signal-001",
+  "id": "smart-signal-ai",
+  "meta": {
+    "templateId": "smart-signal-ai"
+  }
+}

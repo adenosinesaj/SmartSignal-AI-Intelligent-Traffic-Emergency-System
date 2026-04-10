@@ -1,0 +1,69 @@
+$kind: http-request
+name: 'Process Traffic Signal'
+method: POST
+url: '{{baseUrl}}/{{webhookPath}}/traffic-signal'
+order: 1000
+description: |-
+  Submits real-time traffic sensor data to the SmartSignal AI workflow.
+
+  **Request fields:**
+  | Field | Type | Required | Description |
+  |---|---|---|---|
+  | signal_id | string | yes | Unique identifier for the traffic signal / intersection |
+  | traffic_level | string | yes | Current traffic density: `HIGH`, `MEDIUM`, or `LOW` |
+  | nearby | string | yes | Nearby traffic density that affects timing adjustment: `HIGH`, `MEDIUM`, or `LOW` |
+  | emergency | boolean | yes | Set to `true` to trigger emergency override (forces green_time = 120 s) |
+
+  **Response fields:**
+  | Field | Type | Description |
+  |---|---|---|
+  | signal_id | string | Echo of the submitted signal ID |
+  | traffic_level | string | Echo of the submitted traffic level |
+  | green_time | number | Calculated green-light duration in seconds |
+  | status | string | `NORMAL` or `EMERGENCY` |
+  | timestamp | string | ISO-8601 timestamp of when the decision was made |
+
+  **Green-time logic (NORMAL mode):**
+  - HIGH traffic → 70 s base; HIGH nearby → −15 s; LOW nearby → +5 s
+  - MEDIUM traffic → 40 s base; adjustments as above
+  - LOW traffic → 20 s base; adjustments as above
+
+  **Emergency mode:** green_time is always 120 s regardless of traffic_level / nearby.
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "signal_id": "SIG-001",
+      "traffic_level": "HIGH",
+      "nearby": "MEDIUM",
+      "emergency": false
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      // Basic response validation
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test("Response has required fields", function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property("signal_id");
+          pm.expect(json).to.have.property("green_time");
+          pm.expect(json).to.have.property("status");
+          pm.expect(json).to.have.property("timestamp");
+      });
+
+      pm.test("green_time is a positive number", function () {
+          const json = pm.response.json();
+          pm.expect(json.green_time).to.be.a("number").and.to.be.above(0);
+      });
+
+      pm.test("status is NORMAL or EMERGENCY", function () {
+          const json = pm.response.json();
+          pm.expect(["NORMAL", "EMERGENCY"]).to.include(json.status);
+      });

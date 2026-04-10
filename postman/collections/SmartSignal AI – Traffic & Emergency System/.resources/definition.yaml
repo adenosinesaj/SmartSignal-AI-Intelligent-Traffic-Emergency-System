@@ -1,0 +1,19 @@
+$kind: collection
+name: 'SmartSignal AI – Traffic & Emergency System'
+description: |-
+  Postman collection for the SmartSignal AI Intelligent Traffic & Emergency System.
+  This collection covers the n8n webhook endpoint that receives traffic sensor data,
+  applies AI-driven signal timing logic, and returns optimised green-light durations.
+
+  **Workflow summary:**
+  1. Webhook receives a POST with signal_id, traffic_level, nearby, and emergency flag.
+  2. If emergency=true → green_time is forced to 120 s and status = EMERGENCY.
+  3. Otherwise, traffic logic calculates green_time based on traffic_level and nearby density.
+  4. The workflow responds with signal_id, traffic_level, green_time, status, and timestamp.
+variables:
+  - key: baseUrl
+    value: 'http://localhost:5678'
+    description: 'Base URL of the n8n instance (change to your deployed host)'
+  - key: webhookPath
+    value: 'webhook'
+    description: 'n8n webhook path prefix (production uses "webhook", test uses "webhook-test")'
